@@ -84,6 +84,14 @@ namespace Grammar {
     static const std::string DiffuseColorToken = "diffuse";
     static const std::string SpecularColorToken = "specular";
     static const std::string EmissionColorToken = "emission";
+    
+    static const std::string DiffuseTextureToken = "diffuse";
+    static const std::string DiffuseSpecularTextureToken = "specular";
+    static const std::string SpecularPowerTextureToken = "specular_power";
+    static const std::string EmissionTextureToken = "emission";
+    static const std::string OpacyTextureToken = "opacity";
+    static const std::string TransparencyTextureToken = "transparency";
+    static const std::string NormalTextureToken = "normal";
 
     static const char *TextureType         = "Texture";
 
@@ -292,7 +300,7 @@ void OpenGEXImporter::handleNodes( DDLNode *node, aiScene *pScene ) {
     }
 
     DDLNode::DllNodeList childs = node->getChildNodeList();
-    for( DDLNode::DllNodeList::iterator it = childs.begin(); it != childs.end(); it++ ) {
+    for( DDLNode::DllNodeList::iterator it = childs.begin(); it != childs.end(); ++it ) {
         Grammar::TokenType tokenType( Grammar::matchTokenType( ( *it )->getType().c_str() ) );
         switch( tokenType ) {
             case Grammar::MetricToken:
@@ -496,24 +504,25 @@ static void setMatrix( aiNode *node, DataArrayList *transformData ) {
     }
     
     node->mTransformation.a1 = m[ 0 ];
-    node->mTransformation.a2 = m[ 1 ];
-    node->mTransformation.a3 = m[ 2 ];
-    node->mTransformation.a4 = m[ 3 ];
+    node->mTransformation.a2 = m[ 4 ];
+    node->mTransformation.a3 = m[ 8 ];
+    node->mTransformation.a4 = m[ 12 ];
 
-    node->mTransformation.b1 = m[ 4 ];
+    node->mTransformation.b1 = m[ 1 ];
     node->mTransformation.b2 = m[ 5 ];
-    node->mTransformation.b3 = m[ 6 ];
-    node->mTransformation.b4 = m[ 7 ];
+    node->mTransformation.b3 = m[ 9 ];
+    node->mTransformation.b4 = m[ 13 ];
 
-    node->mTransformation.c1 = m[ 8 ];
-    node->mTransformation.c2 = m[ 9 ];
+    node->mTransformation.c1 = m[ 2 ];
+    node->mTransformation.c2 = m[ 6 ];
     node->mTransformation.c3 = m[ 10 ];
-    node->mTransformation.c4 = m[ 11 ];
+    node->mTransformation.c4 = m[ 14 ];
 
-    node->mTransformation.d1 = m[ 12 ];
-    node->mTransformation.d2 = m[ 13 ];
-    node->mTransformation.d3 = m[ 14 ];
+    node->mTransformation.d1 = m[ 3 ];
+    node->mTransformation.d2 = m[ 7 ];
+    node->mTransformation.d3 = m[ 11 ];
     node->mTransformation.d4 = m[ 15 ];
+
 }
 
 //------------------------------------------------------------------------------------------------
@@ -807,7 +816,41 @@ void OpenGEXImporter::handleColorNode( ODDLParser::DDLNode *node, aiScene *pScen
 
 //------------------------------------------------------------------------------------------------
 void OpenGEXImporter::handleTextureNode( ODDLParser::DDLNode *node, aiScene *pScene ) {
+    if( NULL == node ) {
+        return;
+    }
 
+    Property *prop = node->findPropertyByName( "attrib" );
+    if( NULL != prop ) {
+        if( NULL != prop->m_value ) {
+            Value *val( node->getValue() );
+            if( NULL != val ) {
+                aiString tex;
+                tex.Set( val->getString() );
+                if( prop->m_value->getString() == Grammar::DiffuseTextureToken ) {
+                    m_currentMaterial->AddProperty( &tex, AI_MATKEY_TEXTURE_DIFFUSE( 0 ) );
+                } else if( prop->m_value->getString() == Grammar::SpecularPowerTextureToken ) {
+                    m_currentMaterial->AddProperty( &tex, AI_MATKEY_TEXTURE_SPECULAR( 0 ) );
+
+                } else if( prop->m_value->getString() == Grammar::EmissionTextureToken ) {
+                    m_currentMaterial->AddProperty( &tex, AI_MATKEY_TEXTURE_EMISSIVE( 0 ) );
+
+                } else if( prop->m_value->getString() == Grammar::OpacyTextureToken ) {
+                    m_currentMaterial->AddProperty( &tex, AI_MATKEY_TEXTURE_OPACITY( 0 ) );
+
+                } else if( prop->m_value->getString() == Grammar::TransparencyTextureToken ) {
+                    // ToDo!
+                    // m_currentMaterial->AddProperty( &tex, AI_MATKEY_TEXTURE_DIFFUSE( 0 ) );
+                } else if( prop->m_value->getString() == Grammar::NormalTextureToken ) {
+                    m_currentMaterial->AddProperty( &tex, AI_MATKEY_TEXTURE_NORMALS( 0 ) );
+
+                }
+                else {
+                    ai_assert( false );
+                }
+            }
+        }
+    }
 }
 
 //------------------------------------------------------------------------------------------------
